@@ -1,0 +1,100 @@
+version: '3.7'
+
+services:
+
+  api-gateway:
+    image: lishenga/retargeting-api-gateway:0.0.1-SNAPSHOT
+    ports:
+      - "8765:8765"
+    networks:
+      - spring-cloud-network
+    depends_on:
+      - naming-server
+    environment:
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+
+  config-server:
+    image: lishenga/retargeting-config-server:0.0.1-SNAPSHOT
+    ports:
+      - "8888:8888"
+    networks:
+      - spring-cloud-network
+    depends_on:
+      - naming-server
+    environment:
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+
+  naming-server:
+    image: lishenga/retargeting-naming_server:0.0.1-SNAPSHOT
+    ports:
+      - "8761:8761"
+    networks:
+      - spring-cloud-network
+
+#docker run -p 9411:9411 openzipkin/zipkin:2.23
+
+  zipkin-server:
+    image: openzipkin/zipkin:2.23
+    ports:
+      - "9411:9411"
+    networks:
+      - spring-cloud-network
+    restart: always #Restart if there is a problem starting up
+
+networks:
+  spring-cloud-network:
+
+
+# version: '3.7'
+
+# services:
+
+#   api-gateway:
+#     image: ghcr.io/lishenga/retargeting-api-gateway:dev
+#     mem_limit: 700m
+#     ports:
+#       - "8765:8765"
+#     networks:
+#       - spring-cloud-network
+#     depends_on:
+#       - naming-server
+#     environment:
+#       EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+#       SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+
+#   config-server:
+#     image: ghcr.io/lishenga/retargeting-config-server:dev
+#     mem_limit: 700m
+#     ports:
+#       - "8888:8888"
+#     networks:
+#       - spring-cloud-network
+#     depends_on:
+#       - naming-server
+#     environment:
+#       EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+#       SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+
+#   naming-server:
+#     image: ghcr.io/lishenga/retargeting-naming_server:dev
+#     mem_limit: 700m
+#     ports:
+#       - "8761:8761"
+#     networks:
+#       - spring-cloud-network
+
+# #docker run -p 9411:9411 openzipkin/zipkin:2.23
+
+#   zipkin-server:
+#     image: openzipkin/zipkin:2.23
+#     mem_limit: 300m
+#     ports:
+#       - "9411:9411"
+#     networks:
+#       - spring-cloud-network
+#     restart: always #Restart if there is a problem starting up
+
+# networks:
+#   spring-cloud-network:

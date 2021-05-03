@@ -1,0 +1,257 @@
+name: Retargeting Branding and Affiliate Marketing WorkFlow
+on:
+  push:
+    branches-ignore:
+      - consul
+env:
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_DEFAULT_OUTPUT: json
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  S3_BUCKET: ${{ secrets.S3_BUCKET }}
+  APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }} 
+  DEPLOYMENT_GROUP: ${{ secrets.DEPLOYMENT_GROUP }}
+  DOCKER_USERNAME: lishenga
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: build and deploy on staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+
+      - name: Maven Package
+        run: |
+          cd api-gateway
+          mvn spring-boot:build-image -DskipTests
+          cd ..
+          cd config-server
+          mvn spring-boot:build-image -DskipTests
+          cd ..
+          cd naming_server
+          mvn spring-boot:build-image -DskipTests
+          cd ..
+
+      - uses: actions/checkout@v2
+
+      - name: Log into registry
+        # This is where you will update the PAT to GITHUB_TOKEN
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        run: |
+        
+          cd api-gateway
+          APIGATEWAY_IMAGE_ID=ghcr.io/${{ github.repository_owner }}/retargeting-branding-apigateway
+
+          # Change all uppercase to lowercase
+          APIGATEWAY_IMAGE_ID=$(echo $APIGATEWAY_IMAGE_ID | tr '[A-Z]' '[a-z]')
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=latest
+
+          docker tag lishenga/retargeting-api-gateway:0.0.1-SNAPSHOT $APIGATEWAY_IMAGE_ID:dev
+          docker push $APIGATEWAY_IMAGE_ID:dev
+          cd ..
+                
+          cd config-server
+          CONFIG_SERVER_IMAGE_ID=ghcr.io/${{ github.repository_owner }}/retargeting-branding-configserver
+
+          # Change all uppercase to lowercase
+          CONFIG_SERVER_IMAGE_ID=$(echo $CONFIG_SERVER_IMAGE_ID | tr '[A-Z]' '[a-z]')
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=latest
+  
+          docker tag lishenga/retargeting-config-server:0.0.1-SNAPSHOT $CONFIG_SERVER_IMAGE_ID:dev
+          docker push $CONFIG_SERVER_IMAGE_ID:dev
+          cd ..
+
+          cd naming_server
+          NAMING_SERVER_IMAGE_ID=ghcr.io/${{ github.repository_owner }}/retargeting-branding-naming-server
+
+          # Change all uppercase to lowercase
+          NAMING_SERVER_IMAGE_ID=$(echo $NAMING_SERVER_IMAGE_ID | tr '[A-Z]' '[a-z]')
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=latest
+
+          docker tag lishenga/retargeting-naming_server:0.0.1-SNAPSHOT $NAMING_SERVER_IMAGE_ID:dev
+          docker push $NAMING_SERVER_IMAGE_ID:dev
+          cd ..
+
+          zip -r build.zip appspec.yml scripts docker-compose.yml
+
+      - name: Upload
+        id: upload
+        uses: Lishenga/aws-code-deploy@v1
+        with: 
+          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          APPLICATION_NAME: ${{ env.APPLICATION_NAME }}
+          S3_BUCKET: ${{ env.S3_BUCKET }}
+          COMMAND: "upload"
+          ZIP_FILE: "build.zip"
+      - name: Deploy
+        id: deploy
+        uses: Lishenga/aws-code-deploy@v1
+        with:
+          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          APPLICATION_NAME: ${{ env.APPLICATION_NAME }}
+          DEPLOYMENT_GROUP: ${{ env.DEPLOYMENT_GROUP }}
+          S3_BUCKET: ${{ env.S3_BUCKET }}
+          COMMAND: "deploy"
+          WAIT: "true"
+          IGNORE_APPLICATION_STOP_FAILURES: "true"
+          FILE_EXISTS_BEHAVIOR: "OVERWRITE"
+              
+
+# name: Retargeting and Rebranding docker image to Amazon ECR  
+
+# on:
+#   push:
+#     branches:
+#       - main       
+
+# env:
+#   AWS_DEFAULT_REGION: us-east-1
+#   AWS_DEFAULT_OUTPUT: json
+#   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+#   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#   RETARGETING_REBRANDING_CONTAINER_IMAGE: retargettingandrebranding:latest  
+#   AUTHENTICATION_AUTHORIZATION_CONTAINER_IMAGE: authenticationandauthorization:latest 
+#   AFFILIATE_SYSTEM_CONTAINER_IMAGE: affiliatesystem:latest 
+
+# jobs:
+#   build-and-push:
+#     name: Building and pushing image to AWS ECR
+#     runs-on: ubuntu-latest     
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@master
+
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v1
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: us-east-1
+
+#       - name: Login to Amazon ECR
+#         id: login-ecr
+#         uses: aws-actions/amazon-ecr-login@v1
+
+#       - name: Set up JDK 14 
+#         uses: actions/setup-java@v1         
+#         with:
+#           java-version: 14
+
+#       - name: Maven Package
+#         run: |
+#           cd retargeting_branding
+#           mvn clean install
+#           cd ..
+#           cd authentication
+#           mvn clean install
+#           cd ..
+#           cd affiliate
+#           mvn clean install
+#           cd ..
+
+#       - name: Build and tag the retargettingandrebranding-image
+#         id: build-retargettingandrebranding-image
+#         run: |
+#           docker build \
+#             -t $RETARGETING_REBRANDING_CONTAINER_IMAGE \
+#             -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$RETARGETING_REBRANDING_CONTAINER_IMAGE ./retargeting_branding
+#           echo "::set-output name=image::$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$RETARGETING_REBRANDING_CONTAINER_IMAGE"
+
+#       - name: Build and tag the authenticationandauthorization-image
+#         id: build-authenticationandauthorization-image
+#         run: |
+#           docker build \
+#             -t $AUTHENTICATION_AUTHORIZATION_CONTAINER_IMAGE \
+#             -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AUTHENTICATION_AUTHORIZATION_CONTAINER_IMAGE ./authentication
+#           echo "::set-output name=image::$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AUTHENTICATION_AUTHORIZATION_CONTAINER_IMAGE"
+
+#       - name: Build and tag the affiliatesystem-image
+#         id: build-affiliatesystem-image
+#         run: |
+#           docker build \
+#             -t $AFFILIATE_SYSTEM_CONTAINER_IMAGE \
+#             -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AFFILIATE_SYSTEM_CONTAINER_IMAGE ./affiliate
+#           echo "::set-output name=image::$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AFFILIATE_SYSTEM_CONTAINER_IMAGE"
+
+#       - name: Push
+#         run: |
+#           cd retargeting_branding
+#           docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$RETARGETING_REBRANDING_CONTAINER_IMAGE
+#           cd ..
+#           cd authentication
+#           docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AUTHENTICATION_AUTHORIZATION_CONTAINER_IMAGE
+#           cd ..
+#           cd affiliate
+#           docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$AFFILIATE_SYSTEM_CONTAINER_IMAGE
+
+#       - name: Fill in the new retargettingandrebranding image ID in the Amazon ECS task definition
+#         id: retargettingandrebranding-task-def
+#         uses: aws-actions/amazon-ecs-render-task-definition@v1
+#         with:
+#           task-definition: ./retargeting_branding/task-definition.json
+#           container-name: retargettingandrebranding
+#           image: ${{ steps.build-retargettingandrebranding-image.outputs.image }}
+
+#       - name: Fill in the new authenticationandauthorization image ID in the Amazon ECS task definition
+#         id: authenticationandauthorization-task-def
+#         uses: aws-actions/amazon-ecs-render-task-definition@v1
+#         with:
+#           task-definition: ./authentication/task-definition.json
+#           container-name: authenticationandauthorization
+#           image: ${{ steps.build-authenticationandauthorization-image.outputs.image }}
+
+#       - name: Fill in the new affiliatesystem image ID in the Amazon ECS task definition
+#         id: affiliatesystem-task-def
+#         uses: aws-actions/amazon-ecs-render-task-definition@v1
+#         with:
+#           task-definition: ./affiliate/task-definition.json
+#           container-name: affiliatesystem
+#           image: ${{ steps.build-affiliatesystem-image.outputs.image }}
+
+#       - name: Deploy Amazon retargettingandrebranding ECS task definition
+#         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+#         with:
+#           task-definition: ${{ steps.retargettingandrebranding-task-def.outputs.task-definition }}
+#           service: retargettingandrebranding
+#           cluster: consul-cluster-three   
+#           # wait-for-service-stability: true
+#       - name: Deploy Amazon authenticationandauthorization ECS task definition
+#         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+#         with:
+#           task-definition: ${{ steps.authenticationandauthorization-task-def.outputs.task-definition }}
+#           service: authenticationandauthorization
+#           cluster: consul-cluster-two 
+
+#       - name: Deploy Amazon affiliatesystem ECS task definition
+#         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+#         with:
+#           task-definition: ${{ steps.affiliatesystem-task-def.outputs.task-definition }}
+#           service: affiliatesystem
+#           cluster: consul-cluster-one 
+
+
+

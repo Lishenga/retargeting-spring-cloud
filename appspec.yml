@@ -1,0 +1,18 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /home/ubuntu/retargeting-spring-cloud
+hooks:
+  BeforeInstall:
+    - location: scripts/before_install.sh
+      timeout: 4000
+      runas: ubuntu
+  AfterInstall:
+    - location: scripts/after_install.sh
+      timeout: 4000
+      runas: ubuntu
+  ApplicationStop:
+    - location: scripts/before_install.sh
+      timeout: 4000
+      runas: ubuntu
