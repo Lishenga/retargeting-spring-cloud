@@ -10,7 +10,6 @@ services:
       - spring-cloud-network
     depends_on:
       - naming-server
-    environment:
     
   config-server:
     image: ghcr.io/lishenga/retargeting-branding-configserver:dev
