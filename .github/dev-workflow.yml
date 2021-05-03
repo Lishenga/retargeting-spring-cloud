@@ -12,7 +12,7 @@ env:
   S3_BUCKET: ${{ secrets.S3_BUCKET }}
   APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }} 
   DEPLOYMENT_GROUP: ${{ secrets.DEPLOYMENT_GROUP }}
-  DOCKER_USERNAME: lishenga
+  DOCKER_USERNAME: lishenga   
 
 jobs:
   build:
