@@ -1,0 +1,7 @@
+eureka:
+    client:
+        serviceUrl:
+            defaultZone: 'http://3.235.22.176:8761/eureka'
+spring:
+    zipkin:
+        base-url: 'http://3.235.22.176:9411'

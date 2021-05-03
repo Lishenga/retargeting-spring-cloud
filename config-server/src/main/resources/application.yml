@@ -5,6 +5,6 @@ spring:
         config: 
             server:
                 git:
-                    uri: file://home/ubuntu/retargeting-spring-cloud/git-localconfig-repo
+                    uri: file://home/ubuntu/retargeting-spring-cloud/configs-repo
 server:
     port: 8888
