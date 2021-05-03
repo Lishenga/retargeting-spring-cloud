@@ -11,9 +11,7 @@ services:
     depends_on:
       - naming-server
     environment:
-      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
-      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
-
+    
   config-server:
     image: ghcr.io/lishenga/retargeting-branding-configserver:dev
     ports:
@@ -22,9 +20,6 @@ services:
       - spring-cloud-network
     depends_on:
       - naming-server
-    environment:
-      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
-      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
 
   naming-server:
     image: ghcr.io/lishenga/retargeting-branding-naming-server:dev
