@@ -27,7 +27,7 @@ services:
       SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
 
   naming-server:
-    image: docker pull ghcr.io/lishenga/retargeting-branding-naming-server:dev
+    image: ghcr.io/lishenga/retargeting-branding-naming-server:dev
     ports:
       - "8761:8761"
     networks:
