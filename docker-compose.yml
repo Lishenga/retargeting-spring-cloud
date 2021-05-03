@@ -3,7 +3,7 @@ version: '3.7'
 services:
 
   api-gateway:
-    image: ghcr.io/lishenga/retargeting-api-gateway:dev
+    image: ghcr.io/lishenga/retargeting-apigateway:dev
     ports:
       - "8765:8765"
     networks:
@@ -15,7 +15,7 @@ services:
       SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
 
   config-server:
-    image: ghcr.io/lishenga/retargeting-config-server:dev
+    image: ghcr.io/lishenga/retargeting-configserver:dev
     ports:
       - "8888:8888"       
     networks:
@@ -27,7 +27,7 @@ services:
       SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
 
   naming-server:
-    image: ghcr.io/lishenga/retargeting-naming_server:dev
+    image: ghcr.io/lishenga/retargeting-naming-server:dev
     ports:
       - "8761:8761"
     networks:
